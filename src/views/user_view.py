@@ -12,7 +12,7 @@ class UserView:
         """ Show menu with operation options which can be selected by the user """
         controller = UserController()
         while True:
-            print("\n1. Montrer la liste d'utilisateurs\n2. Ajouter un utilisateur\n3. Quitter l'appli")
+            print("\n1. Montrer la liste d'utilisateurs\n2. Ajouter un utilisateur\n3. Modifier un utilisateur\n4. Supprimer un utilisateur\n5. Retour")
             choice = input("Choisissez une option: ")
 
             if choice == '1':
@@ -23,6 +23,14 @@ class UserView:
                 user = User(None, name, email)
                 controller.create_user(user)
             elif choice == '3':
+                user_id = int(input("ID de l'utilisateur à modifier : ").strip())
+                name, email = UserView.get_inputs()
+                user = User(user_id, name, email)
+                controller.update_user(user)
+            elif choice == '4':
+                user_id = int(input("ID de l'utilisateur à supprimer : ").strip())
+                controller.remove_user(user_id)
+            elif choice == '5':
                 controller.shutdown()
                 break
             else:
