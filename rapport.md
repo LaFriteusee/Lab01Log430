@@ -5,7 +5,7 @@
 
 ## Question 1 – Opérations UPDATE et DELETE dans MySQL
 
-Oui, du SQL est utilisé via Python. Le connecteur `mysql-connector-python` permet d'envoyer des requêtes SQL brutes à MySQL depuis Python.
+Oui, du SQL est utilisé via Python. `mysql-connector-python` permet d'envoyer des requêtes SQL à MySQL depuis Python.
 
 **UPDATE** — modifie le `name` et `email` d'un utilisateur identifié par son `id` :
 
@@ -27,13 +27,15 @@ self.cursor.execute(
 self.conn.commit()
 ```
 
-Les `%s` sont des paramètres liés (parameterized queries) : MySQL injecte les valeurs de façon sécurisée, ce qui évite les injections SQL. Le `commit()` est obligatoire pour persister les changements sur les opérations DML (`INSERT`, `UPDATE`, `DELETE`).
+Les `%s` sont des paramètres liés (parameterized queries) : MySQL injecte les valeurs de façon sécurisée, ce qui évite les injections SQL. Le `commit()` est obligatoire pour persister les changements sur les opérations (`INSERT`, `UPDATE`, `DELETE`).
 
 ---
 
 ## Question 2 – Opérations dans MongoDB
 
-Non, MongoDB n'utilise pas de SQL. pymongo utilise une API Python orientée documents, sans langage de requête SQL.
+Non, MongoDB n'utilise pas de SQL, mais du noSQL. pymongo utilise une API Python orientée documents. il est stocké sous la forme de Json.
+
+**Différence clé avec MySQL :** MongoDB identifie les documents par `_id` de type `ObjectId` (généré automatiquement), non par un entier auto-incrémenté. 
 
 **select_all** — récupère tous les documents de la collection :
 
@@ -64,13 +66,13 @@ self.collection.update_one(
 self.collection.delete_one({"_id": user_id})
 ```
 
-**Différence clé avec MySQL :** MongoDB identifie les documents par `_id` de type `ObjectId` (généré automatiquement), non par un entier auto-incrémenté. C'est pourquoi `insert()` retourne `result.inserted_id` (un `ObjectId`) et les méthodes `update`/`delete` l'utilisent directement — l'interchangeabilité avec la DAO MySQL est préservée.
+
 
 ---
 
 ## Question 3 – Implémentation de product_view.py
 
-`product_view.py` n'importe **pas** directement `ProductDAO`. Il passe par `ProductController`, conformément au patron MVC : la Vue ne connaît que le Contrôleur, et le Contrôleur connaît la DAO.
+`product_view.py` n'importe **pas** directement `ProductDAO`. Il passe par `ProductController`, conformément au patron MVC : la Vue ne connaît que le Contrôleur, et le Contrôleur connaît la DAO(Model).
 
 ```python
 from models.product import Product
@@ -97,9 +99,11 @@ class ProductView:
             elif choice == '4':
                 controller.shutdown()
                 break
+            else:
+                print("Cette option n'existe pas.")
 ```
 
-Cette séparation respecte le principe de responsabilité unique : la Vue gère uniquement l'affichage et la saisie, le Contrôleur orchestre la logique métier, et la DAO gère l'accès aux données. Si on remplace `ProductDAO` par une autre implémentation (ex. MongoDB), seul le Contrôleur et la DAO changent — la Vue reste intacte.
+Cette séparation respecte le principe de responsabilité unique : la Vue gère uniquement l'affichage et la saisie, le Contrôleur S'occupe de la logique, et la DAO donne l'accès aux données. Si on remplace `ProductDAO` par une autre implémentation (ex. MongoDB), seul le Contrôleur et la DAO changent,tandis que la Vue reste intacte.
 
 ---
 
@@ -127,34 +131,34 @@ Les données restent **normalisées** : chaque entité est dans sa propre table,
 
 Deux approches sont possibles :
 
-**Approche embarquée** — on imbrique les achats directement dans le document utilisateur :
 ```json
 {
   "_id": ObjectId("..."),
   "name": "Ada Lovelace",
   "purchases": [
-    { "product_name": "Laptop", "brand": "Dell", "price": 999.99, "quantity": 1 },
-    { "product_name": "Mouse", "brand": "Logitech", "price": 29.99, "quantity": 2 }
+    { "product_name": "Laptop", "brand": "Dell", "price": 1999.99, "quantity": 1 },
+    { "product_name": "Mouse", "brand": "Razer", "price": 129.99, "quantity": 1 }
   ]
 }
 ```
-
-**Approche par référence** — on stocke les `ObjectId` des produits dans le document utilisateur, similaire aux clés étrangères :
 ```json
 {
   "_id": ObjectId("..."),
   "name": "Ada Lovelace",
   "purchases": [
-    { "product_id": ObjectId("..."), "quantity": 1 }
+    { "product_id": ObjectId("..."), "quantity": 5 }
   ]
 }
 ```
+Soit on stock le produit directement dans les document de l'utilisateur, ou on stock la référence à l'objet dans celui-ci via son `_id` qui est une approche qui a plus de similarité avec les clé étrangère de SQL
 
-### Comparaison
 
-| | MySQL | MongoDB |
-|---|---|---|
-| Structure | Tables séparées + JOIN | Document unique ou références |
-| Intégrité | Clés étrangères garanties | À gérer en application |
-| Requêtes complexes | SQL JOIN natif | `$lookup` (agrégation) |
-| Scalabilité lectures | Moins flexible | Très rapide si données embarquées |
+# Annexe 
+
+## Annexe - CI sur la VM
+
+![CI sur la VM](Image/Image_CI.png)
+
+## Annexe - Résultat des tests
+
+![Resultat des test](Image\Image_test.png)
